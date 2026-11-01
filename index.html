@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2b1d6b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>دراجة الأبطال</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div id="speedlines"></div>
+  <div id="flash"></div>
+
+  <!-- شريط المعلومات -->
+  <div id="hud" class="hidden">
+    <div class="topbar">
+      <div class="stats">
+        <div class="stat"><span class="ic">🏅</span><b id="score">٠</b><small>نقطة</small></div>
+        <div class="stat"><span class="ic">⭐</span><b id="stars">٠</b><small>نجمة</small></div>
+        <div class="stat"><span class="ic">⏱️</span><b id="time">٠٠:٠٠</b><small>الوقت</small></div>
+        <div class="stat streak" id="streakBox"><span class="ic">🔥</span><b id="streak">٠</b><small>متتالية</small></div>
+      </div>
+      <div class="tbtns">
+        <button id="btnSound" class="ib" aria-label="الصوت">🔊</button>
+        <button id="btnFull" class="ib" aria-label="ملء الشاشة">⛶</button>
+        <button id="btnPause" class="ib" aria-label="إيقاف مؤقت">⏸</button>
+      </div>
+    </div>
+    <div class="progress">
+      <div class="pname" id="stageName">المرحلة الأولى</div>
+      <div class="ptrack">
+        <div class="pfill" id="pfill"></div>
+        <div class="pmark" style="right:33.33%"></div>
+        <div class="pmark" style="right:66.66%"></div>
+        <div class="prider" id="prider">🚲</div>
+        <div class="pgoal">🏆</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- السؤال الجوي (المرحلة الأولى) -->
+  <div id="qpanel" class="hidden">
+    <div class="qhead"><span class="cloud">☁️</span><span id="qnum">سؤال جوي</span><span class="chip" id="qtype">اختيار</span></div>
+    <div class="qtext" id="qtext"></div>
+    <canvas id="qfig" class="qfig"></canvas>
+    <div class="lanes" id="qlanes"></div>
+    <div class="dist"><div id="qdist"></div></div>
+  </div>
+
+  <div id="toast" class="hidden"></div>
+  <div id="popups"></div>
+
+  <!-- أزرار التوجيه للّمس -->
+  <div id="controls" class="hidden">
+    <button id="btnLeft" class="steer" aria-label="يسار">◀</button>
+    <div class="hint" id="ctrlHint">وجّه الدراجة يميناً ويساراً</div>
+    <button id="btnRight" class="steer" aria-label="يمين">▶</button>
+  </div>
+
+  <!-- نافذة سؤال المحطة وسؤال الأذكياء -->
+  <div id="modal" class="screen hidden">
+    <div class="card qcard">
+      <div class="mhead"><span id="mtitle">محطة التحدي</span><span class="chip" id="mtype">اختيار من متعدد</span></div>
+      <div class="mskill" id="mskill"></div>
+      <div class="qtext big" id="mtext"></div>
+      <canvas id="mfig" class="mfig"></canvas>
+      <div id="mopts" class="opts"></div>
+      <div id="mgrid" class="hidden">
+        <canvas id="gridc"></canvas>
+        <div class="gbtns">
+          <button class="btn ok" id="gCheck">تحقّق ✔</button>
+          <button class="btn ghost" id="gClear">مسح</button>
+          <button class="btn ghost" id="gHint">تلميح 💡</button>
+        </div>
+      </div>
+      <div id="mfb" class="fb hidden"></div>
+      <button class="btn go hidden" id="mNext">تابع الانطلاق 🚴</button>
+    </div>
+  </div>
+
+  <!-- القائمة الرئيسية -->
+  <div id="menu" class="screen">
+    <div class="menu-wrap">
+      <div class="logo">
+        <div class="l1">دراجة الأبطال</div>
+        <div class="l2">مغامرة الانسحاب والانعكاس</div>
+        <div class="l3">رياضيات الصف الخامس · الدرس ٢-٦</div>
+      </div>
+      <div class="card menu-card">
+        <div class="lbl">اختر بطلك</div>
+        <div class="heroes">
+          <button class="hero-btn sel" data-hero="boy"><span class="av">🧑🏻‍🦱</span><b>ريان</b><small>الدرّاج السريع</small></button>
+          <button class="hero-btn" data-hero="girl"><span class="av">👧🏻</span><b>ليان</b><small>بطلة المرايا</small></button>
+        </div>
+        <input id="pname" maxlength="18" placeholder="اكتب اسمك (اختياري)">
+        <button class="btn go" id="btnStart">ابدأ المغامرة 🚀</button>
+        <button class="btn ghost" id="btnHow">كيف ألعب؟</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="how" class="screen hidden">
+    <div class="card">
+      <h2>كيف ألعب؟</h2>
+      <div class="how-list">
+        <div><b>١</b><p><span class="tag t1">الاختيار دون توقف</span> اقرأ السؤال الجوي ثم وجّه دراجتك إلى المسار الملوّن الذي يحمل الإجابة الصحيحة قبل البوابة.</p></div>
+        <div><b>٢</b><p><span class="tag t2">محطات التحدي</span> تتوقف عند كل محطة: الإجابة الصحيحة تمنحك انطلاقة سريعة، والخطأ يبطئك مع شرح مبسّط.</p></div>
+        <div><b>٣</b><p><span class="tag t3">منعطفات الأبطال</span> اجمع النجوم وتجنّب الحواجز في الطريق المتعرّج، وفي النهاية يواجهك <b>سؤال الأذكياء ٢</b>.</p></div>
+      </div>
+      <div class="keys">🖥️ الحاسوب: الأسهم ← → أو A / D &nbsp;·&nbsp; 📱 الهاتف واللوحي: أزرار التوجيه أو السحب على الشاشة &nbsp;·&nbsp; المسافة/Esc للإيقاف</div>
+      <button class="btn go" id="btnHowOk">فهمت! 👍</button>
+    </div>
+  </div>
+
+  <div id="stageCard" class="screen hidden">
+    <div class="card stage-card">
+      <div class="snum" id="scNum">المرحلة ١</div>
+      <h2 id="scTitle"></h2>
+      <p id="scDesc"></p>
+      <div class="sgoal" id="scGoal"></div>
+      <button class="btn go" id="scGo">انطلق! 🚴‍♂️</button>
+    </div>
+  </div>
+
+  <div id="pause" class="screen hidden">
+    <div class="card">
+      <h2>⏸ استراحة قصيرة</h2>
+      <button class="btn go" id="pResume">متابعة اللعب</button>
+      <button class="btn ghost" id="pRestart">إعادة المغامرة</button>
+      <button class="btn ghost" id="pMenu">القائمة الرئيسية</button>
+    </div>
+  </div>
+
+  <div id="countdown" class="hidden"></div>
+
+  <div id="results" class="screen hidden">
+    <div class="card res-card">
+      <div class="trophy-title">🏆 كأس البطل الذهبي 🏆</div>
+      <div class="res-name" id="rName"></div>
+      <div class="rank" id="rRank"></div>
+      <div class="res-stats">
+        <div><b id="rScore"></b><small>النقاط</small></div>
+        <div><b id="rStars"></b><small>النجوم</small></div>
+        <div><b id="rTime"></b><small>الوقت</small></div>
+        <div><b id="rAcc"></b><small>الدقة</small></div>
+      </div>
+      <h3>مستوى الإتقان لكل مهارة من الدرس</h3>
+      <div id="mastery"></div>
+      <div id="badges" class="badges"></div>
+      <button class="btn go" id="rAgain">العب مرة أخرى 🔁</button>
+    </div>
+  </div>
+
+  <div id="loading" class="screen"><div class="loader">🚲</div><div>جارٍ تجهيز المغامرة…</div></div>
+
+  <script src="lib/three.min.js"></script>
+  <script src="js/figures.js"></script>
+  <script src="js/questions.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/hero.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
