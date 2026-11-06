@@ -814,7 +814,7 @@
       '<div class="cert-foot"><span>التاريخ: ' + d.toLocaleDateString('ar') + '</span><span class="cert-owl">' + ART.hakeem() + '<small>حكيم الحروف</small></span></div>' +
       '</div></div>';
     var row = h('div', 'row-btns no-print');
-    row.appendChild(btn('primary', '🖨️ اطبع أو احفظ PDF', function () { window.print(); }));
+    if (!window.HK_EMBED) row.appendChild(btn('primary', '🖨️ اطبع أو احفظ PDF', function () { window.print(); }));
     row.appendChild(btn('ghost', '🗺️ إلى الخريطة', function () { go('map'); }));
     w.appendChild(row);
     screenEl.appendChild(w);

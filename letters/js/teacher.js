@@ -5,6 +5,26 @@
   var GN = {}; D.GAMES.forEach(function (g) { GN[g.id] = g.name; });
   var UNLOCK_KEY = 'harf-teacher-unlocked';
   var root, ui, tab = 'students', selId = null;
+  // داخل صفحة Claude: لا تنزيل ملفات ولا طباعة، فننسخ البيانات إلى الحافظة بدلاً من ذلك
+  var EMBED = !!window.HK_EMBED;
+  var XL_LABEL = EMBED ? '📋 نسخ للصق في Excel' : '📗 تصدير Excel';
+  function printBtn(id) { return EMBED ? '' : '<button class="btn" id="' + id + '">📕 طباعة / PDF</button>'; }
+  function onPrint(id) { var b = $('#' + id); if (b) b.onclick = function () { window.print(); }; }
+  function copyText(text, what) {
+    function manual() {
+      var c = document.createElement('div');
+      c.innerHTML = '<h2>انسخ ' + esc(what) + '</h2><p>حدّد النص كله ثم انسخه' + (what === 'النتائج' ? ' والصقه في Excel.' : ' واحفظه في ملف.') + '</p><textarea class="t-ta" rows="8" readonly></textarea><div class="row-btns"><button class="btn primary" data-x>تم</button></div>';
+      c.querySelector('textarea').value = text;
+      ui.openModal(c, 'dismiss');
+      var ta = c.querySelector('textarea'); ta.focus(); ta.select();
+      c.querySelector('[data-x]').onclick = function () { ui.closeModal(true); };
+    }
+    try {
+      navigator.clipboard.writeText(text).then(function () {
+        ui.toast('<span class="t-ic">📋</span><div><b>تم نسخ ' + esc(what) + '</b><small>' + (what === 'النتائج' ? 'افتح Excel والصقها (Ctrl+V)' : 'الصقها في ملف نصي واحفظه') + '</small></div>', 4500);
+      }, manual);
+    } catch (e) { manual(); }
+  }
 
   function ar(n) { return HK.games.toAr(n); }
   function $(s, r) { return (r || root).querySelector(s); }
@@ -162,7 +182,7 @@
     var weakL = D.LETTERS.map(function (l, i) { return { l: l, m: letterAvg[i] }; }).filter(function (o) { return o.m !== null && o.m < 60; }).sort(function (a, b) { return a.m - b.m; });
     var mean = function (a) { return a.length ? Math.round(a.reduce(function (x, y) { return x + y; }, 0) / a.length) : null; };
     el.innerHTML = '<div class="t-card no-print t-toolbar"><label>الصف: <select id="gcls"><option value="">جميع الطلبة</option>' + Object.keys(classes).map(function (c) { return '<option ' + (group.cls === c ? 'selected' : '') + '>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
-      '<button class="btn" id="gx">📗 تصدير Excel</button><button class="btn" id="gp">📕 طباعة / PDF</button></div>' +
+      '<button class="btn" id="gx">' + XL_LABEL + '</button>' + printBtn('gp') + '</div>' +
       '<div class="print-area"><h2 class="print-only">تقرير الصف — مملكة الحروف ' + (group.cls ? '(' + esc(group.cls) + ')' : '') + ' — ' + fmtDate(Date.now()) + '</h2>' +
       '<div class="t-kpis"><div><b>' + ar(list.length) + '</b><small>طالباً</small></div><div><b>' + (mean(avgs) === null ? '—' : ar(mean(avgs)) + '٪') + '</b><small>متوسط الإتقان</small></div>' +
       '<div><b>' + ar(all.reduce(function (a, x) { return a + x.done; }, 0)) + '</b><small>حرفاً مكتملاً (مجموع)</small></div><div><b>' + (mean(finals) === null ? '—' : ar(mean(finals))) + '</b><small>متوسط الاختبار النهائي (' + ar(finals.length) + ' طالب)</small></div></div>' +
@@ -172,7 +192,7 @@
       list.map(function (s, k) { return '<tr><td><b>' + esc(s.name) + '</b></td>' + all[k].ms.map(mcell).join('') + mcell(all[k].avg) + '</tr>'; }).join('') +
       '<tr class="avg-row"><td><b>متوسط الصف</b></td>' + letterAvg.map(mcell).join('') + mcell(mean(avgs)) + '</tr></tbody></table></div></div></div>';
     $('#gcls').onchange = function (e) { group.cls = e.target.value; render(); };
-    $('#gp').onclick = function () { window.print(); };
+    onPrint('gp');
     $('#gx').onclick = function () { exportExcel(list, 'تقرير-الصف'); };
   }
 
@@ -193,7 +213,7 @@
     if (!recs.length) recs.push(x.avg === null ? 'لم يبدأ الطالب اللعب بعد.' : 'أداء جيد، يُنصح بالاستمرار والانتقال إلى قراءة كلمات وجمل قصيرة.');
 
     el.innerHTML = '<div class="t-card no-print t-toolbar"><label>الطالب: <select id="ssel">' + list.map(function (o) { return '<option value="' + o.id + '" ' + (o.id === selId ? 'selected' : '') + '>' + esc(o.name) + '</option>'; }).join('') + '</select></label>' +
-      '<button class="btn" id="sx">📗 تصدير Excel</button><button class="btn" id="sp">📕 طباعة / PDF</button></div>' +
+      '<button class="btn" id="sx">' + XL_LABEL + '</button>' + printBtn('sp') + '</div>' +
       '<div class="print-area"><h2 class="print-only">تقرير فردي — مملكة الحروف — ' + fmtDate(Date.now()) + '</h2>' +
       '<div class="t-card t-profile"><div class="t-ph">' + (s.hero ? HK.art.hero(s.hero) : '👤') + '</div><div><h2>' + esc(s.name) + '</h2><p class="t-muted">' + esc(s.cls || '') + (s.hero ? ' — البطل: ' + esc(s.hero.name) : '') + ' — أُضيف في ' + fmtDate(s.createdAt) + '</p></div></div>' +
       '<div class="t-kpis"><div><b>' + ar(x.stars) + '</b><small>نجمة من ٧٠٠</small></div><div><b>' + ar(x.done) + ' / ٢٨</b><small>حرفاً مكتملاً</small></div><div><b>' + ar(x.mastered) + '</b><small>حرفاً متقناً</small></div><div><b>' + (x.avg === null ? '—' : ar(x.avg) + '٪') + '</b><small>متوسط الإتقان</small></div><div><b>' + (x.final === null ? '—' : ar(x.final)) + '</b><small>آخر اختبار نهائي</small></div><div><b>' + fmtTime(s.timeSpent) + '</b><small>وقت اللعب</small></div></div>' +
@@ -217,7 +237,7 @@
         : '<p class="t-muted">لم يُجرِ الطالب الاختبار النهائي بعد (يُفتح بعد إكمال العوالم السبعة).</p>') + '</div></div>';
 
     $('#ssel').onchange = function (e) { selId = e.target.value; render(); };
-    $('#sp').onclick = function () { window.print(); };
+    onPrint('sp');
     $('#sx').onclick = function () { exportExcel([s], 'تقرير-' + s.name); };
     function sel() { return $$('.t-letters input:checked').map(function (i) { return i.value; }); }
     $('#selweak').onclick = function () { $$('.t-letters input').forEach(function (i) { i.checked = x.weak.some(function (l) { return l.id === i.value; }); }); };
@@ -261,17 +281,24 @@
         finals.push([s.name, new Date(f.at).toLocaleString('ar'), f.score, f.correct, f.total].concat(Object.keys(HK.games.FINAL_TYPE_NAMES).map(function (k) { var b = f.byType && f.byType[k]; return b ? b.c + '/' + b.n : ''; })));
       });
     });
-    var blob = HK.exporter.xlsx([{ name: 'ملخص الطلبة', rows: sum }, { name: 'إتقان الحروف %', rows: heat }, { name: 'تفاصيل الألعاب', rows: games }, { name: 'الاختبار النهائي', rows: finals }]);
+    var sheets = [{ name: 'ملخص الطلبة', rows: sum }, { name: 'إتقان الحروف %', rows: heat }, { name: 'تفاصيل الألعاب', rows: games }, { name: 'الاختبار النهائي', rows: finals }];
+    if (EMBED) {
+      var tsv = sheets.map(function (sh) {
+        return sh.name + '\n' + sh.rows.map(function (r) { return r.map(function (v) { return String(v == null ? '' : v).replace(/[\t\n]/g, ' '); }).join('\t'); }).join('\n');
+      }).join('\n\n');
+      copyText(tsv, 'النتائج'); return;
+    }
+    var blob = HK.exporter.xlsx(sheets);
     HK.exporter.download(blob, fname.replace(/[\\\/:*?"<>|]/g, '-') + '-' + new Date().toISOString().slice(0, 10) + '.xlsx');
   }
 
   /* ===== البيانات ===== */
   function dataTab(el) {
     el.innerHTML = '<div class="t-card"><h2>💾 أين تُحفظ البيانات؟</h2><p>تُحفظ جميع البيانات تلقائياً على هذا الجهاز داخل المتصفح، ولا تُرسل إلى أي خادم أو إنترنت. تبقى البيانات بعد إغلاق اللعبة، لكنها تُمسح إذا مُسحت بيانات المتصفح؛ لذلك ننصح بتنزيل نسخة احتياطية بانتظام.</p>' +
-      '<div class="row-btns"><button class="btn primary" id="bk">⬇️ تنزيل نسخة احتياطية</button><label class="btn">⬆️ استعادة نسخة<input type="file" id="rs" accept=".json,application/json" hidden></label><button class="btn" id="xall">📗 تصدير كل الطلبة Excel</button></div></div>' +
+      '<div class="row-btns"><button class="btn primary" id="bk">' + (EMBED ? '📋 نسخ نسخة احتياطية' : '⬇️ تنزيل نسخة احتياطية') + '</button><label class="btn">⬆️ استعادة نسخة<input type="file" id="rs" accept=".json,application/json" hidden></label><button class="btn" id="xall">' + (EMBED ? '📋 نسخ نتائج كل الطلبة' : '📗 تصدير كل الطلبة Excel') + '</button></div></div>' +
       '<div class="t-card"><h2>🔐 الرمز السري</h2><div class="row-btns"><button class="btn" id="cpin">تغيير الرمز السري</button></div></div>' +
       '<div class="t-card danger-zone"><h2>⚠️ مسح جميع البيانات</h2><p>يحذف جميع الطلبة وتقدمهم من هذا الجهاز نهائياً.</p><button class="btn danger" id="wipe">مسح كل شيء</button></div>';
-    $('#bk').onclick = function () { HK.exporter.download(new Blob([S.exportJSON()], { type: 'application/json' }), 'نسخة-مملكة-الحروف-' + new Date().toISOString().slice(0, 10) + '.json'); };
+    $('#bk').onclick = function () { if (EMBED) return copyText(S.exportJSON(), 'النسخة الاحتياطية'); HK.exporter.download(new Blob([S.exportJSON()], { type: 'application/json' }), 'نسخة-مملكة-الحروف-' + new Date().toISOString().slice(0, 10) + '.json'); };
     $('#xall').onclick = function () { if (!S.state.students.length) return ui.toast('<span class="t-ic">ℹ️</span><div><b>لا يوجد طلبة بعد</b></div>'); exportExcel(S.state.students, 'جميع-الطلبة'); };
     $('#rs').onchange = function (e) {
       var f = e.target.files[0]; if (!f) return;
