@@ -7,6 +7,8 @@
   var screenEl = $('#screen'), topbar = $('#topbar');
   var current = { name: null, cleanup: null, session: null };
   var lastGuide = '';
+  // داخل منصة تعلم (SCORM): المتعلم معروف من المنصة، ولوحة المعلم تُستبدل بتقارير المنصة
+  var LMS = !!(HK.scorm && HK.scorm.active);
 
   function h(tag, cls, html) { var e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
   function btn(cls, html, fn, label) {
@@ -147,7 +149,7 @@
       '<label class="set-row"><span>🐢 سرعة النطق</span><input type="range" id="set-rate" min="0.55" max="1.1" step="0.05" value="' + s.rate + '"></label>' +
       '<p class="voice-status">' + vtxt + '</p>' +
       '<div class="row-btns"><button class="btn" id="set-test">🗣️ جرّب الصوت</button><button class="btn" id="set-full">⛶ ملء الشاشة</button></div>' +
-      (st() ? '<div class="row-btns"><button class="btn ghost" id="set-switch">👤 تغيير البطل</button></div>' : '') +
+      (st() && !LMS ? '<div class="row-btns"><button class="btn ghost" id="set-switch">👤 تغيير البطل</button></div>' : '') +
       '<div class="row-btns"><button class="btn primary" id="set-close">تم ✔️</button></div>', 'dismiss settings');
     $('#set-mute', c).onchange = function (e) { s.muted = e.target.checked; S.save(); A.applyVolume(); if (s.muted) { A.stop(); A.music(false); } else A.music(true); };
     $('#set-vol', c).oninput = function (e) { s.volume = +e.target.value; S.save(); A.applyVolume(); };
@@ -172,17 +174,19 @@
       '<div class="title-chars"><div class="t-owl">' + ART.hakeem() + '</div><div class="t-hero">' + ART.hero({ color: '#ff5d8f', hat: 'crown', cape: '#3a86ff' }) + '</div></div>' +
       '<h1 class="game-title"><span>مغامرة إنقاذ</span><span class="big">مملكة الحروف</span></h1>' +
       '<p class="subtitle">رحلة ممتعة لتعلّم الحروف الهجائية العربية الثمانية والعشرين</p>';
-    var b = btn('primary huge', '▶ ابدأ المغامرة', function () { go('profiles'); });
+    var b = btn('primary huge', '▶ ابدأ المغامرة', function () { if (LMS) enterStudent(); else go('profiles'); });
     w.appendChild(b);
     var row = h('div', 'row-btns');
     row.appendChild(btn('ghost', '⚙️ الإعدادات', openSettings));
-    row.appendChild(btn('ghost', '👩‍🏫 لوحة المعلم', function () { location.hash = 'teacher'; }));
+    if (!LMS) row.appendChild(btn('ghost', '👩‍🏫 لوحة المعلم', function () { location.hash = 'teacher'; }));
+    else if (st()) w.appendChild(h('p', 'subtitle', 'مرحباً يا ' + esc(st().name) + ' 👋'));
     w.appendChild(row);
     if (!S.storageOk()) w.appendChild(h('p', 'warn', 'تنبيه: التخزين في هذا المتصفح غير متاح، لن يُحفظ التقدم.'));
     screenEl.appendChild(w);
   };
 
   SCREENS.profiles = function () {
+    if (LMS) return enterStudent();
     setTop({ title: 'من البطل اليوم؟', back: function () { go('title'); } });
     theme(-1); floaters(true);
     var w = h('div', 'page profiles');
@@ -230,7 +234,7 @@
 
   SCREENS.hero = function (p) {
     var s = st(); if (!s) return go('profiles');
-    setTop({ title: 'صمّم بطلك', back: p.first ? function () { go('profiles'); } : function () { go('badges'); } });
+    setTop({ title: 'صمّم بطلك', back: p.first ? function () { go(LMS ? 'title' : 'profiles'); } : function () { go('badges'); } });
     var hero = Object.assign({ name: '', color: ART.COLORS[0], cape: ART.CAPES[0], hat: 'none', eyes: 'round' }, s.hero || {});
     var w = h('div', 'page hero-builder');
     var prev = h('div', 'hb-preview'); w.appendChild(prev);
@@ -340,7 +344,7 @@
 
   SCREENS.map = function (p) {
     var s = st(); if (!s || !s.hero) return go('profiles');
-    setTop({ title: 'خريطة المملكة', back: function () { go('profiles'); } });
+    setTop({ title: 'خريطة المملكة', back: function () { go(LMS ? 'title' : 'profiles'); } });
     theme(-1); floaters(false);
     document.body.classList.add('map-mode');
     A.music(true, 0);
@@ -829,7 +833,7 @@
 
   /* ===== التوجيه بين اللعبة ولوحة المعلم ===== */
   function route() {
-    if (location.hash === '#teacher') {
+    if (location.hash === '#teacher' && !LMS) {
       if (current.session) { current.session.dispose(); current.session = null; }
       if (current.cleanup) { try { current.cleanup(); } catch (e) { } current.cleanup = null; }
       current.name = 'teacher';

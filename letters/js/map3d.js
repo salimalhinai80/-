@@ -15,7 +15,7 @@
   }
 
   var renderer, scene, camera, container, labelsEl, islands = [], castle, water, clock, raf = 0, running = false;
-  var stoneGroup = null, camZ = 6, camZTarget = 6, opts = {}, toonMap, ray, ptr;
+  var stoneGroup = null, remPx = 16, camZ = 6, camZTarget = 6, opts = {}, toonMap, ray, ptr;
   var GREY = new T.Color('#9aa3ad');
 
   function toon(color) {
@@ -234,6 +234,7 @@
   function resize() {
     if (!renderer || !container) return;
     var w = container.clientWidth || innerWidth, h = container.clientHeight || innerHeight;
+    remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     renderer.setSize(w, h, false); camera.aspect = w / h;
     var sp = w < h ? 2.6 : 5.5;
     if (sp !== SPREAD) {
@@ -309,7 +310,8 @@
       var el = ls[i];
       if (v.z > 1 || v.y < -1.3 || v.y > 1.6) { el.style.visibility = 'hidden'; continue; }
       el.style.visibility = 'visible';
-      var sx = Math.max(60, Math.min(w - 60, (v.x * .5 + .5) * w)), sy = Math.max(190, (-v.y * .5 + .5) * h);
+      var rem = remPx;
+      var sx = Math.max(4 * rem, Math.min(w - 4 * rem, (v.x * .5 + .5) * w)), sy = Math.max(Math.min(12 * rem, h * .45), (-v.y * .5 + .5) * h);
       el.style.transform = 'translate(' + sx + 'px,' + sy + 'px) translate(-50%,-100%)';
       el.style.zIndex = String(100 - i);
     }

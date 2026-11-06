@@ -140,7 +140,8 @@
         var l = isT ? L : D.pick(pool);
         sinceTarget = isT ? 0 : sinceTarget + 1;
         var W = arena.clientWidth, H = arena.clientHeight;
-        var size = Math.max(64, Math.min(96, W / 5));
+        var rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+        var size = Math.max(4 * rem, Math.min(6 * rem, W / 5, H / 3.2));
         var el = h('button', 'balloon', '<span>' + esc(l.display) + '</span>');
         el.style.setProperty('--c', D.pick(COLS)); el.style.width = size + 'px'; el.style.height = size * 1.18 + 'px';
         var b = { el: el, l: l, x: Math.random() * (W - size), y: H + 10, size: size, ph: Math.random() * 6, dead: false, sp: speed * (0.85 + Math.random() * .35) };
@@ -357,7 +358,7 @@
         gctx.setTransform(dpr, 0, 0, dpr, 0, 0); ictx.setTransform(dpr, 0, 0, dpr, 0, 0);
         // مقياس الخط ليتسع الحرف
         var m = document.createElement('canvas').getContext('2d');
-        fs = Math.min(H * 0.62, 360);
+        fs = Math.min(H * 0.62, W * 0.5);
         m.font = '900 ' + fs + 'px Cairo';
         var tw = m.measureText(form).width;
         if (tw > W * 0.8) fs = fs * W * 0.8 / tw;

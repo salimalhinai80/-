@@ -50,12 +50,13 @@
     } catch (e) { return blank(); }
   }
 
-  var saveTimer = null, storageOk = true;
+  var saveTimer = null, storageOk = true, saveHooks = [];
   function save(now) {
     clearTimeout(saveTimer);
     var doit = function () {
       try { localStorage.setItem(KEY, JSON.stringify(state)); storageOk = true; }
       catch (e) { storageOk = false; }
+      saveHooks.forEach(function (f) { try { f(now); } catch (e) { } });
     };
     if (now) doit(); else saveTimer = setTimeout(doit, 150);
   }
@@ -227,7 +228,7 @@
   HK.store = {
     get state() { return state; },
     settings: function () { return state.settings; },
-    save: save, on: on, emit: emit, storageOk: function () { return storageOk; },
+    save: save, on: on, emit: emit, onSave: function (f) { saveHooks.push(f); }, normalize: normalize, storageOk: function () { return storageOk; },
     addStudent: addStudent, getStudent: getStudent, removeStudent: removeStudent, active: active, setActive: setActive,
     letterRec: letterRec, recordGame: recordGame, gameRec: gameRec, letterDone: letterDone, worldDone: worldDone,
     allWorldsDone: allWorldsDone, totalStars: totalStars, mastery: mastery, masteryLevel: masteryLevel,
